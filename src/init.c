@@ -66,5 +66,6 @@ void	init_program(t_program *program)
 	program->time_to_sleep = 0;
 	program->all_alive = 1;
 	pthread_mutex_init(&program->print_locks, NULL);
-	pthread_mutex_init(&program->state_lock, NULL);
+	pthread_mutex_init(&program->dead_lock, NULL);
+	pthread_mutex_init(&program->meal_lock, NULL);
 }

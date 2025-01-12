@@ -11,7 +11,7 @@ int	run_philosophers(t_program *program)
 		{
 			printf("Error: Failed to create thread for philosopher %d!\n", program->philos[i].id);
 			return (1);
-        }
+		}
 		i++;
 	}
 	return (0);

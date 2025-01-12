@@ -6,7 +6,7 @@
 /*   By: kubapyciarz <kubapyciarz@student.42.fr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/29 16:17:49 by kubapyciarz       #+#    #+#             */
-/*   Updated: 2024/12/29 23:59:11 by kubapyciarz      ###   ########.fr       */
+/*   Updated: 2025/01/12 14:45:06 by kubapyciarz      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,8 @@ typedef struct s_program
 	t_philo			*philos;
 	t_fork			*forks;
 	pthread_mutex_t	print_locks;
-	pthread_mutex_t	state_lock;
+	pthread_mutex_t	dead_lock;
+	pthread_mutex_t	meal_lock;
 }	t_program;
 
 // init.c
