@@ -1,55 +1,81 @@
 #include "../include/philo.h"
 
-long get_current_time(void)
+long	get_current_time(void)
 {
-	struct timeval tv;
+	struct timeval	tv;
+	long			time;
+
 	gettimeofday(&tv, NULL);
-	long time = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
-	return time;
+	time = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+	return (time);
 }
 
-int	ft_usleep(size_t milliseconds)
+int	check_if_philo_eating(t_philo *philo)
 {
-	size_t	start;
-
-	start = get_current_time();
-	while ((get_current_time() - start) < milliseconds)
-		usleep(500);
+	pthread_mutex_lock(philo->meal_lock);
+	if (philo->is_eating == 1)
+	{
+		pthread_mutex_unlock(philo->meal_lock);
+		return (1);
+	}
+	pthread_mutex_unlock(philo->meal_lock);
 	return (0);
 }
 
-void *life_monitor(void *arg)
+int	check_for_death(t_program *program)
 {
-    t_program *program = (t_program *)arg;
-    int i;
-    long meal_time;
-	long current_time;
-    int	is_eating;
+	int		i;
+	t_philo	*philo;
 
-    while (program->all_alive)
-    {
-        i = 0;
-        while (i < program->num_philo && program->all_alive)
-        {
-            pthread_mutex_lock(&program->meal_lock);
-            meal_time = program->philos[i].last_meal_time;
-			current_time = get_current_time();
-			is_eating = program->philos[i].is_eating;
-            pthread_mutex_unlock(&program->meal_lock);
-			pthread_mutex_lock(&program->dead_lock);
-            if (current_time - meal_time > program->time_to_die && is_eating != 1)
-            {
-                program->all_alive = 0;
-                pthread_mutex_unlock(&program->dead_lock);
-                pthread_mutex_lock(&program->print_locks);
-                printf("Philosopher %d has died at %ld ms\n", program->philos[i].id, current_time);
-                pthread_mutex_unlock(&program->print_locks);
-                return NULL;
-            }
-            pthread_mutex_unlock(&program->dead_lock);
-            i++;
-        }
-		usleep(50);
-    }
-    return NULL;
+	i = 0;
+	philo = program->philo;
+	while (i < program->num_of_philos)
+	{
+		if (!check_if_philo_eating(&philo[i]))
+		{
+			if (get_current_time() - philo[i].last_meal_time
+				>= philo[i].time_to_die)
+			{
+				pthread_mutex_lock(&program->dead_lock);
+				program->dead_flag = 1;
+				pthread_mutex_unlock(&program->dead_lock);
+				msg("died!", philo, philo[i].id, 1);
+				return (1);
+			}
+		}
+		i++;
+	}
+	return (0);
+}
+
+static void	check_if_eat_limit(t_program *program)
+{
+	int	i;
+
+	i = 0;
+	if (program->eat_limit == 0)
+		return ;
+	while (i < program->num_of_philos)
+	{
+		if (program->philo[i].meal_ate < program->eat_limit)
+			return ;
+		i++;
+	}
+	program->is_limit_reached = 1;
+}
+
+void	*monitor(void *arg)
+{
+	t_program	*program;
+
+	program = (t_program *)arg;
+	while (1)
+	{
+		if (check_for_death(program) == 1)
+			break ;
+		check_if_eat_limit(program);
+		if (program->is_limit_reached == 1)
+			break ;
+	}
+	return (NULL);
 }

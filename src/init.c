@@ -1,71 +1,58 @@
 #include "../include/philo.h"
 
-void	init_forks(t_program *program, int num_of_forks)
+void	init_program(t_program *program, t_philo *philos, char **argv)
 {
-	int	i;
-
-	i = 0;
-	program->forks = malloc(sizeof(t_fork) * num_of_forks);
-	if (!program->forks)
-		return ;
-	while (i < num_of_forks)
-	{
-		program->forks[i].id = i + 1;
-		pthread_mutex_init(&program->forks[i].mutex, NULL);
-		i++;
-	}
-}
-
-static int	get_left_id(int philo_id, int num_of_philos)
-{
-	if (philo_id == 1)
-		return (num_of_philos);
+	program->dead_flag = 0;
+	program->philo = philos;
+	program->num_of_philos = ft_atoi(argv[1]);
+	if (argv[5])
+		program->eat_limit = ft_atoi(argv[5]);
 	else
-		return (philo_id - 1);
-}
-
-static int	get_right_id(int philo_id, int num_of_philos)
-{
-	if (philo_id == num_of_philos)
-		return (1);
-	else
-		return (philo_id + 1);
-}
-
-void	init_philo(t_program *program, int num_of_philos)
-{
-	int	i;
-	int	l_fork_id;
-	int	r_fork_id;
-
-	i = 0;
-	program->philos = malloc(sizeof(t_philo) * num_of_philos);
-	if (!program->philos)
-		return ;
-	while (i < num_of_philos)
-	{
-		l_fork_id = get_left_id(i + 1, num_of_philos) - 1;
-		r_fork_id = get_right_id(i + 1, num_of_philos) - 1;
-		program->philos[i].id = i + 1;
-		program->philos[i].l_fork = &program->forks[l_fork_id];
-		program->philos[i].r_fork = &program->forks[r_fork_id];
-		program->philos[i].last_meal_time = get_current_time();
-		program->philos[i].program = program;
-		program->philos[i].is_eating = 0;
-		i++;
-	}
-}
-
-void	init_program(t_program *program)
-{
-	program->num_philo = 0;
-	program->forks = NULL;
-	program->philos = NULL;
-	program->time_to_die = 0;
-	program->time_to_eat = 0;
-	program->time_to_sleep = 0;
-	program->all_alive = 1;
-	pthread_mutex_init(&program->print_locks, NULL);
+		program->eat_limit = 0;
+	program->is_limit_reached = 0;
+	pthread_mutex_init(&program->write_lock, NULL);
 	pthread_mutex_init(&program->dead_lock, NULL);
 	pthread_mutex_init(&program->meal_lock, NULL);
+}
+
+void	init_forks(pthread_mutex_t *forks, int num_of_philos)
+{
+	int	i;
+
+	i = 0;
+	while (i < num_of_philos)
+	{
+		pthread_mutex_init(&forks[i], NULL);
+		i++;
+	}
+}
+
+void	init_philos(t_program *program, t_philo *philo,
+pthread_mutex_t *forks, char **argv)
+{
+	int	i;
+
+	i = 0;
+	while (i < ft_atoi(argv[1]))
+	{
+		philo[i].id = i + 1;
+		philo[i].is_eating = 0;
+		philo[i].dead = &program->dead_flag;
+		philo[i].is_limit_reached = &program->is_limit_reached;
+		philo[i].meal_ate = 0;
+		philo[i].start_time = get_current_time();
+		philo[i].last_meal_time = get_current_time();
+		philo[i].time_to_die = ft_atoi(argv[2]);
+		philo[i].time_to_sleep = ft_atoi(argv[4]);
+		philo[i].time_to_eat = ft_atoi(argv[3]);
+		philo[i].write_lock = &program->write_lock;
+		philo[i].dead_lock = &program->dead_lock;
+		philo[i].meal_lock = &program->meal_lock;
+		philo[i].l_fork = &forks[i];
+		if (i == program->num_of_philos - 1)
+			philo[i].r_fork = &forks[0];
+		else
+			philo[i].r_fork = &forks[i + 1];
+		i++;
+	}
 }

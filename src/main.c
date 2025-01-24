@@ -1,6 +1,32 @@
 #include "../include/philo.h"
 
-static int	ft_atoi(const char *str)
+void	ft_usleep(int time)
+{
+	long	start_time;
+
+	start_time = get_current_time();
+	while ((get_current_time() - start_time) < time)
+		usleep(100);
+}
+
+void	msg(char *str, t_philo *philo, int id, int mon_check)
+{
+	long	offset_time;
+
+	pthread_mutex_lock(philo->dead_lock);
+	if ((*philo->dead == 1 && mon_check == 0) || *philo->is_limit_reached == 1)
+	{
+		pthread_mutex_unlock(philo->dead_lock);
+		return ;
+	}
+	pthread_mutex_unlock(philo->dead_lock);
+	pthread_mutex_lock(philo->write_lock);
+	offset_time = get_current_time() - philo->start_time;
+	printf("%ld %d %s\n", offset_time, id, str);
+	pthread_mutex_unlock(philo->write_lock);
+}
+
+int	ft_atoi(const char *str)
 {
 	unsigned int	num;
 	int				i;
@@ -23,35 +49,48 @@ static int	ft_atoi(const char *str)
 	return ((int)(np * num));
 }
 
-static void	setup_properties(t_program *program, char **argv)
+static int	check_args(char **argv)
 {
-	program->num_philo = ft_atoi(argv[1]);
-	program->time_to_die = ft_atoi(argv[2]);
-	program->time_to_eat = ft_atoi(argv[3]);
-	program->time_to_sleep = ft_atoi(argv[4]);
+	int	i;
+	int	j;
+
+	i = 1;
+	while (argv[i])
+	{
+		j = 0;
+		while (argv[i][j])
+		{
+			if (argv[i][j] < '0' || argv[i][j] > '9')
+				return (1);
+			j++;
+		}
+		i++;
+	}
+	return (0);
 }
 
-
-
-int main(int argc, char **argv)
+int	main(int argc, char **argv)
 {
-	t_program	program;
-	pthread_t	monitor;
+	t_program		program;
+	t_philo			philos[300];
+	pthread_mutex_t	forks[300];
 
-	if (argc != 5)
+	if (argc != 5 && argc != 6)
 	{
-		printf("USAGE: ./philosophers [num of philo] [time to die] [time to eat] [time to sleep]\n");
+		printf("USAGE: ./philosophers [num of philo] [time to die]"
+			"[time to eat] [time to sleep]"
+			"[number_of_times_each_philosopher_must_eat (optional)]\n"
+			);
 		return (1);
 	}
-	init_program(&program);
-	setup_properties(&program, argv);
-	init_forks(&program, program.num_philo);
-	init_philo(&program, program.num_philo);
-	if (run_monitor(&program, &monitor) == 1)
+	if (check_args(argv) == 1)
+	{
+		printf("arguments need to be intinger\n");
 		return (1);
-	if (run_philosophers(&program) == 1)
-		return (1);
-	pthread_join(monitor, NULL);
-	philo_thread_join(&program);
+	}
+	init_program(&program, philos, argv);
+	init_forks(forks, ft_atoi(argv[1]));
+	init_philos(&program, philos, forks, argv);
+	init_threads(&program, forks);
 	return (0);
 }

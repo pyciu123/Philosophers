@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   philo.h                                            :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: kubapyciarz <kubapyciarz@student.42.fr>    +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/12/29 16:17:49 by kubapyciarz       #+#    #+#             */
-/*   Updated: 2025/01/12 14:45:06 by kubapyciarz      ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef PHILO_H
 # define PHILO_H
 # include <pthread.h>
@@ -18,55 +6,58 @@
 # include <sys/time.h>
 # include <unistd.h>
 
-typedef struct s_program t_program;
-
-typedef struct s_fork
-{
-	int				id;
-	pthread_mutex_t	mutex;
-}	t_fork;
-
 typedef struct s_philo
 {
-	int			id;
-	int			is_eating;
-	pthread_t	thread;
-	t_fork		*l_fork;
-	t_fork		*r_fork;
-	long		last_meal_time;
-	t_program	*program;
+	pthread_t		thread;
+	int				id;
+	int				is_eating;
+	int				*dead;
+	int				*is_limit_reached;
+	int				meal_ate;
+	size_t			start_time;
+	size_t			time_to_die;
+	size_t			time_to_sleep;
+	size_t			time_to_eat;
+	size_t			last_meal_time;
+	pthread_mutex_t	*l_fork;
+	pthread_mutex_t	*r_fork;
+	pthread_mutex_t	*write_lock;
+	pthread_mutex_t	*dead_lock;
+	pthread_mutex_t	*meal_lock;
 }	t_philo;
 
 typedef struct s_program
 {
-	int				num_philo;
-	int				time_to_die;
-	int				time_to_sleep;
-	int				time_to_eat;
-	int				all_alive;
-	t_philo			*philos;
-	t_fork			*forks;
-	pthread_mutex_t	print_locks;
+	int				dead_flag;
+	int				num_of_philos;
+	int				eat_limit;
+	int				is_limit_reached;
+	pthread_mutex_t	write_lock;
 	pthread_mutex_t	dead_lock;
 	pthread_mutex_t	meal_lock;
+	t_philo			*philo;
+	pthread_t		monitor_thread;
 }	t_program;
 
+int				ft_atoi(const char *str);
+
 // init.c
-void	init_program(t_program *program);
-void	init_philo(t_program *program, int num_of_philos);
-void	init_forks(t_program *program, int num_of_forks);
-
+void			init_program(t_program *program, t_philo *philos, char **argv);
+void			init_forks(pthread_mutex_t *fork, int num_of_philos);
+void			init_philos(t_program *program, t_philo *philo,
+					pthread_mutex_t *forks, char **argv);
 // monitor.c
-long	get_current_time(void);
-void	*life_monitor(void *arg);
-int		ft_usleep(size_t milliseconds);
+long			get_current_time(void);
+void			msg(char *str, t_philo *philo, int id, int mon_check);
+void			ft_usleep(int time);
+void			*monitor(void *arg);
 
-// routine
-void	*philo_routine(void *arg);
+// threads_create.c
+void			init_threads(t_program *program, pthread_mutex_t *forks);
 
-// threads
-int		run_monitor(t_program *program, pthread_t *monitor);
-int		run_philosophers(t_program *program);
-void philo_thread_join(t_program *program);
+// routine.c
+void			think(t_philo *philo);
+void			f_sleep(t_philo *philo);
+void			eat(t_philo *philo);
 
 #endif
